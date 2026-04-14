@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EconTrack — Global Economic Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — EconTrack
+   Aesthetic: Dark financial terminal meets modern SaaS
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --black:       #080c14;
+  --surface-0:   #0d1420;
+  --surface-1:   #111b2e;
+  --surface-2:   #182338;
+  --surface-3:   #1e2d46;
+  --border:      rgba(255,255,255,0.07);
+  --border-glow: rgba(0,210,255,0.25);
+
+  --blue:        #00d2ff;
+  --blue-dim:    rgba(0,210,255,0.12);
+  --blue-mid:    rgba(0,210,255,0.35);
+  --green:       #00e5a0;
+  --green-dim:   rgba(0,229,160,0.12);
+  --red:         #ff4b6e;
+  --red-dim:     rgba(255,75,110,0.12);
+  --amber:       #ffb700;
+  --amber-dim:   rgba(255,183,0,0.12);
+  --purple:      #a78bfa;
+
+  --text-0:      #f0f6ff;
+  --text-1:      #8ba3c4;
+  --text-2:      #4d6b8a;
+  --text-mono:   #7ec8e3;
+
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+
+  --shadow-card: 0 4px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --shadow-glow: 0 0 40px rgba(0,210,255,0.08);
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--text-0);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,210,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,210,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface-0); }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+/* ══════════════════════════════════
+   SIDEBAR NAV
+══════════════════════════════════ */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 64px;
+  background: var(--surface-0);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  z-index: 100;
+  gap: 4px;
+}
+.sidebar-logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--blue), #0066ff);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 800;
+  color: #fff;
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(0,210,255,0.4);
+}
+.nav-item {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: all 0.2s;
+  position: relative;
+  font-size: 18px;
+  border: none; background: transparent;
+}
+.nav-item:hover { color: var(--blue); background: var(--blue-dim); }
+.nav-item.active {
+  color: var(--blue);
+  background: var(--blue-dim);
+  box-shadow: 0 0 0 1px var(--border-glow);
+}
+.nav-item .tooltip {
+  position: absolute;
+  left: 56px;
+  background: var(--surface-3);
+  color: var(--text-0);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  border: 1px solid var(--border);
+}
+.nav-item:hover .tooltip { opacity: 1; }
+.nav-divider { width: 32px; height: 1px; background: var(--border); margin: 8px 0; }
+.nav-spacer { flex: 1; }
+
+/* ══════════════════════════════════
+   MAIN LAYOUT
+══════════════════════════════════ */
+.main {
+  margin-left: 64px;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ══════════════════════════════════
+   TOP BAR
+══════════════════════════════════ */
+.topbar {
+  height: 60px;
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+}
+.topbar-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, var(--blue), #7c9fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.topbar-tagline {
+  font-size: 12px;
+  color: var(--text-2);
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+  font-family: var(--font-mono);
+}
+.topbar-spacer { flex: 1; }
+.live-badge {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--green-dim);
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse-green 1.5s infinite;
+}
+@keyframes pulse-green {
+  0%,100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(0,229,160,0.4); }
+  50% { opacity: 0.8; transform: scale(1.2); box-shadow: 0 0 0 4px rgba(0,229,160,0); }
+}
+.ws-status {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+}
+.ws-status.connected { color: var(--green); }
+.ws-status.error { color: var(--red); }
+
+/* ══════════════════════════════════
+   TICKER BAR
+══════════════════════════════════ */
+.ticker-bar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  height: 38px;
+  overflow: hidden;
+  position: relative;
+}
+.ticker-track {
+  display: flex;
+  gap: 0;
+  animation: ticker-scroll 45s linear infinite;
+  white-space: nowrap;
+  height: 100%;
+  align-items: center;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 28px;
+  border-right: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  height: 100%;
+}
+.ticker-item .flag { font-size: 14px; }
+.ticker-item .t-code { color: var(--text-1); font-weight: 600; }
+.ticker-item .t-val { color: var(--text-0); }
+.ticker-item .t-delta { font-size: 10px; }
+.t-up   { color: var(--green); }
+.t-down { color: var(--red); }
+
+/* ══════════════════════════════════
+   PAGE SECTIONS
+══════════════════════════════════ */
+.page { display: none; padding: 28px; }
+.page.active { display: block; }
+
+/* ══════════════════════════════════
+   CONTROLS BAR
+══════════════════════════════════ */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.ctrl-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-mono);
+}
+.chip:hover { border-color: var(--blue-mid); color: var(--blue); }
+.chip.active {
+  background: var(--blue-dim);
+  border-color: var(--border-glow);
+  color: var(--blue);
+  box-shadow: 0 0 12px rgba(0,210,255,0.1);
+}
+.select-ctrl {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-0);
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.select-ctrl:focus { border-color: var(--blue-mid); }
+.btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.btn:hover { border-color: var(--blue-mid); color: var(--blue); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), #0066ff);
+  border-color: transparent;
+  color: #000;
+  font-weight: 700;
+}
+.btn-primary:hover { opacity: 0.85; color: #000; }
+.year-range { display: flex; align-items: center; gap: 8px; }
+.year-range input[type=range] {
+  accent-color: var(--blue);
+  width: 120px;
+}
+
+/* ══════════════════════════════════
+   KPI CARDS
+══════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+@media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 800px)  { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+
+.kpi-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--kpi-color, var(--blue));
+  opacity: 0.8;
+}
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--kpi-color, var(--blue)) 0%, transparent 70%);
+  opacity: 0.06;
+}
+.kpi-card:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+.kpi-icon {
+  font-size: 18px;
+  margin-bottom: 12px;
+  display: block;
+}
+.kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 6px;
+  transition: all 0.4s;
+}
+.kpi-value.flash { animation: kpi-flash 0.4s ease; }
+@keyframes kpi-flash {
+  0%  { opacity: 0.4; transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.kpi-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.kpi-delta { font-weight: 600; }
+.val-pos { color: var(--green); }
+.val-neg { color: var(--red); }
+.val-neu { color: var(--text-1); }
+
+/* Sparkline in card */
+.kpi-spark {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 80px; height: 36px;
+  opacity: 0.35;
+}
+
+/* ══════════════════════════════════
+   CHART CARDS
+══════════════════════════════════ */
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-big { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 1100px) {
+  .chart-grid-2, .chart-grid-3, .chart-grid-big { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: rgba(0,210,255,0.12); }
+.card-header {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-0);
+  letter-spacing: -0.2px;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  margin-top: 1px;
+}
+.card-body { padding: 16px 20px; }
+.card-actions { display: flex; gap: 6px; align-items: center; }
+.pill {
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: var(--font-mono);
+  border: 1px solid;
+}
+.pill-blue  { color: var(--blue);  background: var(--blue-dim);  border-color: rgba(0,210,255,0.2); }
+.pill-green { color: var(--green); background: var(--green-dim); border-color: rgba(0,229,160,0.2); }
+.pill-red   { color: var(--red);   background: var(--red-dim);   border-color: rgba(255,75,110,0.2); }
+.pill-amber { color: var(--amber); background: var(--amber-dim); border-color: rgba(255,183,0,0.2); }
+canvas { display: block; }
+
+/* ══════════════════════════════════
+   MAP
+══════════════════════════════════ */
+#world-map {
+  height: 480px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--surface-2);
+}
+.leaflet-container { background: #0a1628 !important; }
+.leaflet-tile-pane { filter: saturate(0.3) brightness(0.5) hue-rotate(180deg); }
+.country-marker {
+  background: var(--surface-2);
+  border: 2px solid var(--blue);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-0);
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(0,210,255,0.3);
+}
+.leaflet-popup-content-wrapper {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border-glow) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+  color: var(--text-0) !important;
+  font-family: var(--font-body) !important;
+}
+.leaflet-popup-tip { background: var(--surface-2) !important; }
+.leaflet-popup-close-button { color: var(--text-2) !important; }
+.map-popup h3 { font-family: var(--font-display); font-size: 16px; margin-bottom: 10px; color: var(--blue); }
+.map-popup .stat-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.map-popup .stat-row:last-child { border-bottom: none; }
+.map-popup .s-label { color: var(--text-1); }
+.map-popup .s-val { font-family: var(--font-mono); font-weight: 600; }
+
+/* ══════════════════════════════════
+   DATA TABLE
+══════════════════════════════════ */
+.data-table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table thead th {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 10px 16px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.data-table thead th:first-child { text-align: left; }
+.data-table thead th:hover { color: var(--blue); }
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table tbody td {
+  padding: 12px 16px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-1);
+}
+.data-table tbody td:first-child {
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--text-0);
+}
+.country-cell { display: flex; align-items: center; gap: 10px; }
+.flag-bubble {
+  font-size: 20px;
+  line-height: 1;
+}
+.rank-badge {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+}
+.rank-badge.gold   { background: rgba(255,183,0,0.15); color: var(--amber); }
+.rank-badge.silver { background: rgba(255,255,255,0.08); color: #ccc; }
+.rank-badge.bronze { background: rgba(205,127,50,0.15); color: #cd7f32; }
+.bar-cell { display: flex; align-items: center; gap: 8px; }
+.mini-bar { height: 4px; border-radius: 2px; min-width: 4px; transition: width 0.5s; }
+.trend-arrow { font-size: 10px; }
+
+/* ══════════════════════════════════
+   FORECAST CARDS
+══════════════════════════════════ */
+.forecast-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) { .forecast-grid { grid-template-columns: 1fr; } }
+.forecast-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+.fc-year { font-size: 11px; color: var(--text-2); font-family: var(--font-mono); margin-bottom: 4px; }
+.fc-val  { font-size: 28px; font-family: var(--font-mono); font-weight: 600; }
+.fc-label { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+
+/* ══════════════════════════════════
+   HEATMAP
+══════════════════════════════════ */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap-table { border-collapse: collapse; font-size: 11px; }
+.heatmap-table th, .heatmap-table td { padding: 8px 12px; text-align: center; white-space: nowrap; }
+.heatmap-table th { color: var(--text-2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+.hm-cell { border-radius: 4px; font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+
+/* ══════════════════════════════════
+   LOADING STATES
+══════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.loading-spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--surface-3);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════
+   TOASTS
+══════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 1000;
+}
+.toast {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  max-width: 320px;
+  animation: toast-in 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px); } }
+.toast.success { border-left-color: var(--green); }
+.toast.error   { border-left-color: var(--red); }
+
+/* ══════════════════════════════════
+   CORRELATION HEATMAP
+══════════════════════════════════ */
+.corr-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  gap: 2px;
+}
+.corr-cell {
+  height: 50px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.corr-cell:hover { transform: scale(1.05); z-index: 2; }
+.corr-label { font-size: 11px; color: var(--text-2); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; }
+
+/* ══════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-2);
+}
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state h3 { font-size: 16px; color: var(--text-1); margin-bottom: 6px; }
+
+/* ══════════════════════════════════
+   SECTION HEADINGS
+══════════════════════════════════ */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.section-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-bottom: 20px;
+}
+
+/* ══════════════════════════════════
+   RESPONSIVE HIDE
+══════════════════════════════════ */
+@media (max-width: 700px) {
+  .sidebar { width: 0; overflow: hidden; }
+  .main { margin-left: 0; }
+  .page { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">E</div>
+  <button class="nav-item active" onclick="goPage('dashboard')" title="">
+    <span>⊞</span><span class="tooltip">Dashboard</span>
+  </button>
+  <button class="nav-item" onclick="goPage('map')" title="">
+    <span>🗺</span><span class="tooltip">World Map</span>
+  </button>
+  <button class="nav-item" onclick="goPage('trends')" title="">
+    <span>📈</span><span class="tooltip">Trends</span>
+  </button>
+  <button class="nav-item" onclick="goPage('compare')" title="">
+    <span>⚖</span><span class="tooltip">Compare</span>
+  </button>
+  <button class="nav-item" onclick="goPage('forecast')" title="">
+    <span>🔮</span><span class="tooltip">Forecast</span>
+  </button>
+  <div class="nav-divider"></div>
+  <button class="nav-item" onclick="goPage('data')" title="">
+    <span>🗃</span><span class="tooltip">Data Table</span>
+  </button>
+  <div class="nav-spacer"></div>
+  <button class="nav-item" onclick="showToast('Settings coming soon','info')" title="">
+    <span>⚙</span><span class="tooltip">Settings</span>
+  </button>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-brand">EconTrack</div>
+    <div class="topbar-tagline">Global Economic Intelligence Platform</div>
+    <div class="topbar-spacer"></div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div class="ws-status" id="wsStatus">⬤ Connecting…</div>
+    <div id="lastUpdate" style="font-size:11px;color:var(--text-2);font-family:var(--font-mono)"></div>
+  </header>
+
+  <!-- TICKER BAR -->
+  <div class="ticker-bar">
+    <div class="ticker-track" id="tickerTrack">
+      <div class="ticker-item"><span class="flag">🇺🇸</span><span class="t-code">USA</span><span class="t-val" id="tk-USA-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇮🇳</span><span class="t-code">IND</span><span class="t-val" id="tk-IND-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇩🇪</span><span class="t-code">DEU</span><span class="t-val" id="tk-DEU-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇨🇳</span><span class="t-code">CHN</span><span class="t-val" id="tk-CHN-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇧🇷</span><span class="t-code">BRA</span><span class="t-val" id="tk-BRA-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇬🇧</span><span class="t-code">GBR</span><span class="t-val" id="tk-GBR-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇯🇵</span><span class="t-code">JPN</span><span class="t-val" id="tk-JPN-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇿🇦</span><span class="t-code">ZAF</span><span class="t-val" id="tk-ZAF-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇦🇺</span><span class="t-code">AUS</span><span class="t-val" id="tk-AUS-gdp">–</span></div>
+      <div class="ticker-item"><span class="flag">🇨🇦</span><span class="t-code">CAN</span><span class="t-val" id="tk-CAN-gdp">–</span></div>
+      <!-- Duplicate for seamless loop -->
+      <div class="ticker-item"><span class="flag">🇺🇸</span><span class="t-code">USA</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇮🇳</span><span class="t-code">IND</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇩🇪</span><span class="t-code">DEU</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇨🇳</span><span class="t-code">CHN</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇧🇷</span><span class="t-code">BRA</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇬🇧</span><span class="t-code">GBR</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇯🇵</span><span class="t-code">JPN</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇿🇦</span><span class="t-code">ZAF</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇦🇺</span><span class="t-code">AUS</span><span class="t-val">–</span></div>
+      <div class="ticker-item"><span class="flag">🇨🇦</span><span class="t-code">CAN</span><span class="t-val">–</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: DASHBOARD ═══ -->
+  <section class="page active" id="page-dashboard">
+    <h1 class="section-title">Global Overview</h1>
+    <p class="section-sub">Real-time macroeconomic pulse across 10 economies · Updated every 3s</p>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card" style="--kpi-color:var(--blue)">
+        <span class="kpi-icon">📈</span>
+        <div class="kpi-label">Avg GDP Growth</div>
+        <div class="kpi-value val-pos" id="kpi-gdp">–</div>
+        <div class="kpi-meta"><span class="kpi-delta" id="kpi-gdp-d">–</span><span>vs prev yr · global avg</span></div>
+        <canvas class="kpi-spark" id="spark-gdp"></canvas>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--red)">
+        <span class="kpi-icon">🔥</span>
+        <div class="kpi-label">Avg Inflation</div>
+        <div class="kpi-value val-neg" id="kpi-inf">–</div>
+        <div class="kpi-meta"><span class="kpi-delta" id="kpi-inf-d">–</span><span>CPI annual change</span></div>
+        <canvas class="kpi-spark" id="spark-inf"></canvas>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--amber)">
+        <span class="kpi-icon">👷</span>
+        <div class="kpi-label">Avg Unemployment</div>
+        <div class="kpi-value" id="kpi-unemp">–</div>
+        <div class="kpi-meta"><span class="kpi-delta" id="kpi-unemp-d">–</span><span>labour force</span></div>
+        <canvas class="kpi-spark" id="spark-unemp"></canvas>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--green)">
+        <span class="kpi-icon">🛒</span>
+        <div class="kpi-label">Consumer Spending</div>
+        <div class="kpi-value val-pos" id="kpi-spend">–</div>
+        <div class="kpi-meta"><span class="kpi-delta" id="kpi-spend-d">–</span><span>household growth</span></div>
+        <canvas class="kpi-spark" id="spark-spend"></canvas>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--purple)">
+        <span class="kpi-icon">🏦</span>
+        <div class="kpi-label">Avg Interest Rate</div>
+        <div class="kpi-value val-neu" id="kpi-int">–</div>
+        <div class="kpi-meta"><span class="kpi-delta" id="kpi-int-d">–</span><span>central bank policy</span></div>
+        <canvas class="kpi-spark" id="spark-int"></canvas>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="chart-grid-big">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">GDP Growth — Multi-Country</div>
+            <div class="card-sub">Annual % change · 2000–2023</div>
+          </div>
+          <div class="card-actions">
+            <span class="pill pill-blue">LIVE</span>
+            <select class="select-ctrl" id="tsIndicator" onchange="renderTimeSeriesChart()">
+              <option value="gdp_growth">GDP Growth</option>
+              <option value="inflation_rate">Inflation</option>
+              <option value="consumer_spending">Spending</option>
+              <option value="unemployment_rate">Unemployment</option>
+              <option value="interest_rate">Interest Rate</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="tsChart" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Market Sentiment</div>
+            <div class="card-sub">Live economic confidence index</div>
+          </div>
+          <span class="pill pill-green">REAL-TIME</span>
+        </div>
+        <div class="card-body">
+          <canvas id="sentimentChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="chart-grid-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Inflation Distribution</div>
+          <div class="card-sub">Current rates by country</div>
+        </div>
+        <div class="card-body">
+          <canvas id="infBarChart" height="180"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">GDP vs Unemployment</div>
+          <div class="card-sub">Scatter · Okun's Law</div>
+        </div>
+        <div class="card-body">
+          <canvas id="scatterChart" height="180"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Debt-to-GDP Ratio</div>
+          <div class="card-sub">Latest year · % of GDP</div>
+        </div>
+        <div class="card-body">
+          <canvas id="debtChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PAGE: MAP ═══ -->
+  <section class="page" id="page-map">
+    <h1 class="section-title">World Economic Map</h1>
+    <p class="section-sub">Click any country marker to see live economic indicators</p>
+    <div class="controls-bar">
+      <span class="ctrl-label">Colour by:</span>
+      <select class="select-ctrl" id="mapIndicator" onchange="updateMapMarkers()">
+        <option value="gdp_growth">GDP Growth</option>
+        <option value="inflation_rate">Inflation</option>
+        <option value="unemployment">Unemployment</option>
+        <option value="interest_rate">Interest Rate</option>
+        <option value="sentiment">Sentiment</option>
+      </select>
+    </div>
+    <div class="card">
+      <div id="world-map"></div>
+    </div>
+
+    <!-- Map legend -->
+    <div style="display:flex;gap:20px;margin-top:16px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-1)">
+        <div style="width:12px;height:12px;background:var(--green);border-radius:3px"></div>Strong (>4%)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-1)">
+        <div style="width:12px;height:12px;background:var(--blue);border-radius:3px"></div>Moderate (2–4%)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-1)">
+        <div style="width:12px;height:12px;background:var(--amber);border-radius:3px"></div>Weak (0–2%)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-1)">
+        <div style="width:12px;height:12px;background:var(--red);border-radius:3px"></div>Contraction (<0%)
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PAGE: TRENDS ═══ -->
+  <section class="page" id="page-trends">
+    <h1 class="section-title">Trend Analysis</h1>
+    <p class="section-sub">Historical data from 2000–2023 with decade breakdowns</p>
+
+    <div class="controls-bar">
+      <span class="ctrl-label">Countries:</span>
+      <div class="chip-group" id="trendCountryChips"></div>
+      <span class="ctrl-label">Indicator:</span>
+      <select class="select-ctrl" id="trendIndicator" onchange="renderTrendCharts()">
+        <option value="gdp_growth">GDP Growth</option>
+        <option value="inflation_rate">Inflation</option>
+        <option value="consumer_spending">Consumer Spending</option>
+        <option value="unemployment_rate">Unemployment</option>
+        <option value="interest_rate">Interest Rate</option>
+      </select>
+      <span class="ctrl-label">Years:</span>
+      <div class="year-range">
+        <span id="yearFromVal" style="font-family:var(--font-mono);font-size:12px;color:var(--text-1)">2000</span>
+        <input type="range" id="yearFrom" min="2000" max="2023" value="2000" oninput="onYearChange()">
+        <span>–</span>
+        <input type="range" id="yearTo" min="2000" max="2023" value="2023" oninput="onYearChange()">
+        <span id="yearToVal" style="font-family:var(--font-mono);font-size:12px;color:var(--text-1)">2023</span>
+      </div>
+    </div>
+
+    <div class="chart-grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="trendMainTitle">GDP Growth Trend</div>
+          <div class="card-sub" id="trendMainSub">Selected countries · 2000–2023</div>
+        </div>
+        <div class="card-body"><canvas id="trendMainChart" height="260"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Year-over-Year Change</div>
+          <div class="card-sub">Annual delta · basis points</div>
+        </div>
+        <div class="card-body"><canvas id="yoyChart" height="260"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Correlation Heatmap -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Indicator Correlation Matrix</div>
+          <div class="card-sub">Pearson r · all selected countries & years</div>
+        </div>
+        <span class="pill pill-blue">COMPUTED</span>
+      </div>
+      <div class="card-body">
+        <div id="corrGrid" class="corr-grid"></div>
+      </div>
+    </div>
+
+    <!-- Decade Heatmap -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Decade Performance Heatmap</div>
+        <div class="card-sub">Average GDP growth by decade · all countries</div>
+      </div>
+      <div class="card-body">
+        <div class="heatmap-wrap">
+          <table class="heatmap-table" id="decadeHeatmap"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PAGE: COMPARE ═══ -->
+  <section class="page" id="page-compare">
+    <h1 class="section-title">Country Comparison</h1>
+    <p class="section-sub">Side-by-side ranking and radar analysis</p>
+
+    <div class="controls-bar">
+      <span class="ctrl-label">Select up to 4:</span>
+      <div class="chip-group" id="compareChips"></div>
+      <select class="select-ctrl" id="compareYear" onchange="renderCompare()">
+        <!-- Filled dynamically -->
+      </select>
+    </div>
+
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Horizontal Ranking</div>
+          <div class="card-sub" id="compareBarSub">All indicators · selected year</div>
+        </div>
+        <div class="card-body"><canvas id="compareBarChart" height="300"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Radar — Economic Profile</div>
+          <div class="card-sub">Normalised across 5 dimensions</div>
+        </div>
+        <div class="card-body"><canvas id="radarChart" height="300"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PAGE: FORECAST ═══ -->
+  <section class="page" id="page-forecast">
+    <h1 class="section-title">3-Year Forecast</h1>
+    <p class="section-sub">Linear trend projection · 2024–2026 · Based on 2000–2023 historical data</p>
+
+    <div class="controls-bar">
+      <span class="ctrl-label">Country:</span>
+      <select class="select-ctrl" id="forecastCountry" onchange="renderForecast()"></select>
+    </div>
+
+    <div class="forecast-grid" id="forecastCards"></div>
+
+    <div class="chart-grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">GDP Growth Projection</div>
+          <div class="card-sub">Historical + 3-year forecast</div>
+        </div>
+        <div class="card-body"><canvas id="fcGdpChart" height="260"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Inflation Projection</div>
+          <div class="card-sub">Historical + 3-year forecast</div>
+        </div>
+        <div class="card-body"><canvas id="fcInfChart" height="260"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PAGE: DATA TABLE ═══ -->
+  <section class="page" id="page-data">
+    <h1 class="section-title">Raw Data Explorer</h1>
+    <p class="section-sub">Full historical dataset · sortable · searchable</p>
+    <div class="controls-bar">
+      <input type="text" id="tableSearch" placeholder="Search country…"
+        style="background:var(--surface-2);border:1px solid var(--border);color:var(--text-0);padding:7px 14px;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:12px;outline:none;width:200px"
+        oninput="filterTable()">
+      <select class="select-ctrl" id="tableYear" onchange="renderDataTable()">
+        <option value="all">All Years</option>
+      </select>
+      <button class="btn btn-primary" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+    <div class="card">
+      <div class="data-table-wrap">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('rank')">Rank</th>
+              <th onclick="sortTable('country')">Country</th>
+              <th onclick="sortTable('year')">Year ↕</th>
+              <th onclick="sortTable('gdp_growth')">GDP Growth</th>
+              <th onclick="sortTable('inflation_rate')">Inflation</th>
+              <th onclick="sortTable('consumer_spending')">Spending</th>
+              <th onclick="sortTable('unemployment_rate')">Unemployment</th>
+              <th onclick="sortTable('interest_rate')">Interest Rate</th>
+              <th onclick="sortTable('debt_to_gdp')">Debt/GDP</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody">
+            <tr><td colspan="9"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div><!-- .main -->
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT — Full Application Logic
+═══════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════
+const API = 'http://localhost:3001/api';
+const WS_URL = 'ws://localhost:3001/ws';
+
+// ── Mock data (used when backend is offline) ──
+const MOCK = {
+  countries: [
+    {code:'USA',name:'United States',  flag_emoji:'🇺🇸',region:'North America',lat:38.9, lng:-77.0,  gdp_usd_bn:25463},
+    {code:'IND',name:'India',          flag_emoji:'🇮🇳',region:'Asia',         lat:20.6, lng:78.9,   gdp_usd_bn:3730},
+    {code:'DEU',name:'Germany',        flag_emoji:'🇩🇪',region:'Europe',       lat:51.2, lng:10.4,   gdp_usd_bn:4072},
+    {code:'CHN',name:'China',          flag_emoji:'🇨🇳',region:'Asia',         lat:35.9, lng:104.2,  gdp_usd_bn:17963},
+    {code:'BRA',name:'Brazil',         flag_emoji:'🇧🇷',region:'S. America',   lat:-10.0,lng:-53.0,  gdp_usd_bn:1920},
+    {code:'GBR',name:'United Kingdom', flag_emoji:'🇬🇧',region:'Europe',       lat:55.4, lng:-3.4,   gdp_usd_bn:3070},
+    {code:'JPN',name:'Japan',          flag_emoji:'🇯🇵',region:'Asia',         lat:36.2, lng:138.3,  gdp_usd_bn:4231},
+    {code:'ZAF',name:'South Africa',   flag_emoji:'🇿🇦',region:'Africa',       lat:-28.5,lng:24.7,   gdp_usd_bn:405},
+    {code:'AUS',name:'Australia',      flag_emoji:'🇦🇺',region:'Oceania',      lat:-25.3,lng:133.8,  gdp_usd_bn:1693},
+    {code:'CAN',name:'Canada',         flag_emoji:'🇨🇦',region:'N. America',   lat:56.1, lng:-106.3, gdp_usd_bn:2140},
+  ],
+  gdp:   {USA:[4.1,1.0,1.7,2.8,3.9,3.5,2.9,1.9,0.1,-2.6,2.5,1.6,2.3,1.8,2.5,2.9,1.6,2.4,2.9,2.3,-3.4,5.9,2.1,2.5],IND:[3.8,4.8,3.8,7.9,7.8,9.3,9.3,10.0,3.9,8.4,8.4,5.2,5.5,6.4,7.4,7.9,8.2,6.6,6.5,6.1,4.0,8.7,7.2,6.3],DEU:[3.0,1.5,-0.2,-0.7,1.2,0.7,3.7,3.3,1.1,-5.7,4.2,3.9,0.4,0.4,2.2,1.7,2.2,2.5,1.5,0.6,-4.6,2.6,1.8,-0.3],CHN:[8.5,8.3,9.1,10.0,10.1,11.4,12.7,14.2,9.7,9.4,10.6,9.5,7.9,7.8,7.4,7.0,6.8,6.9,6.7,6.1,2.3,8.1,3.0,5.2],BRA:[4.4,1.4,3.1,1.1,5.8,3.2,4.0,6.1,5.1,-0.1,7.5,4.0,1.9,3.0,0.5,-3.5,-3.3,1.3,1.8,1.4,-3.9,4.6,2.9,2.9],GBR:[3.9,2.6,2.5,4.3,2.5,3.0,2.8,2.4,0.5,-4.3,1.7,1.5,1.3,2.1,3.1,2.3,1.7,1.9,1.3,1.7,-11.0,7.4,4.3,0.1],JPN:[2.8,0.4,-0.3,1.5,2.2,1.7,2.0,2.2,-1.1,-5.7,4.2,-0.1,1.5,2.0,-0.4,1.2,0.5,1.7,0.6,-0.4,-4.3,2.1,1.0,1.9],ZAF:[4.2,2.7,3.7,2.9,4.6,5.3,5.6,5.4,3.6,-1.5,3.1,3.5,2.2,2.5,1.8,1.3,0.7,1.3,0.8,0.1,-6.3,4.9,1.9,0.6],AUS:[3.2,2.5,3.8,3.0,4.0,3.0,2.9,3.8,2.7,1.7,2.1,2.4,3.6,2.4,2.7,2.4,2.7,2.2,2.8,2.0,-2.1,4.9,3.7,2.0],CAN:[5.2,1.8,2.9,1.9,3.1,3.2,2.8,2.1,1.0,-2.9,3.1,3.1,1.7,2.5,2.8,0.9,1.4,3.0,2.0,1.9,-5.2,5.0,3.4,1.2]},
+  inf:   {USA:[3.4,2.8,1.6,2.3,2.7,3.4,3.2,2.9,3.8,-0.4,1.6,3.2,2.1,1.5,1.6,0.1,1.3,2.1,2.4,1.8,1.2,4.7,8.0,4.1],IND:[4.0,3.7,4.3,3.8,3.8,4.2,6.8,6.4,8.4,10.9,12.0,8.9,9.3,10.9,6.6,5.9,4.9,3.3,2.0,4.8,6.2,5.5,6.7,5.4],DEU:[1.9,2.4,1.3,1.1,1.8,1.9,1.8,2.3,2.6,0.4,1.2,2.5,2.0,1.5,0.8,0.2,0.4,1.5,1.8,1.5,0.5,3.2,8.7,6.0],CHN:[0.4,0.7,-0.8,1.2,3.9,1.8,1.5,4.8,5.9,-0.7,3.3,5.4,2.6,2.6,2.0,1.5,2.0,1.6,2.1,2.9,2.5,0.9,2.0,0.7],BRA:[7.0,6.8,8.5,14.7,6.6,6.9,4.2,3.6,5.7,4.9,5.0,6.6,5.4,6.2,6.3,9.0,8.7,3.5,3.7,4.3,4.5,8.3,11.9,4.6],GBR:[0.8,1.2,1.3,1.4,1.3,2.1,2.3,2.3,3.6,2.2,3.3,4.5,2.8,2.6,1.5,0.0,0.7,2.7,2.5,1.8,0.9,2.5,9.1,7.3],JPN:[-0.7,-0.8,-0.9,-0.2,0.0,-0.3,0.2,0.1,1.4,-1.3,-0.7,-0.3,0.0,-0.3,2.8,0.8,-0.1,0.5,1.0,0.5,0.0,-0.2,2.5,3.3],ZAF:[5.4,5.7,9.2,5.9,1.4,3.4,4.7,7.1,11.3,7.1,4.3,5.0,5.7,5.8,6.1,4.6,6.3,5.3,4.6,4.1,3.3,4.5,6.9,6.0],AUS:[4.5,4.4,3.0,2.8,2.3,2.7,3.5,2.3,4.4,1.8,2.8,3.4,1.8,2.4,2.5,1.5,1.3,1.9,1.9,1.6,0.9,2.8,6.6,5.6],CAN:[2.7,2.5,2.3,2.7,1.8,2.2,2.0,2.1,2.4,0.3,1.8,2.9,1.5,0.9,1.9,1.1,1.4,1.6,2.3,1.9,0.7,3.4,6.8,3.9]},
+  unemp: {USA:[4.0,4.7,5.8,6.0,5.5,5.1,4.6,4.6,5.8,9.3,9.6,8.9,8.1,7.4,6.2,5.3,4.9,4.4,3.9,3.7,8.1,5.4,3.6,3.4],IND:[3.5,3.6,4.1,4.3,3.9,3.8,3.7,3.6,3.4,3.5,3.5,3.5,3.6,3.6,3.6,3.5,3.5,3.5,3.5,5.3,7.1,5.9,7.3,7.8],DEU:[7.5,7.6,8.2,9.0,9.5,10.6,10.3,8.7,7.5,7.8,6.9,5.8,5.4,5.2,5.0,4.6,4.1,3.7,3.4,3.0,4.2,3.6,3.0,2.9],CHN:[3.1,3.6,4.0,4.3,4.2,4.2,4.1,4.0,4.2,4.3,4.1,4.1,4.1,4.0,4.1,4.1,4.0,3.9,4.0,5.2,5.6,5.1,5.5,5.2],BRA:[7.1,6.2,7.1,10.6,9.7,9.3,9.9,8.0,7.1,8.1,6.7,6.0,5.5,5.4,4.8,6.8,8.7,9.3,11.6,11.9,13.5,13.2,9.3,7.9],GBR:[5.4,5.1,5.1,5.0,4.7,4.8,5.4,5.3,5.6,7.6,7.8,8.1,7.9,7.6,6.1,5.3,4.9,4.4,4.0,3.8,4.6,4.5,3.7,4.0],JPN:[4.7,5.0,5.4,5.3,4.7,4.4,4.1,3.8,4.0,5.1,5.0,4.6,4.3,4.0,3.6,3.4,3.1,2.8,2.4,2.4,2.8,2.8,2.6,2.6],ZAF:[25.6,26.4,29.7,31.2,27.8,26.7,25.5,23.0,22.9,24.0,24.9,24.8,24.9,24.7,25.1,25.3,26.7,27.7,27.1,28.7,32.5,34.9,33.5,32.1],AUS:[6.3,6.7,6.3,5.9,5.4,5.0,4.8,4.4,4.2,5.6,5.2,5.1,5.2,5.7,6.1,6.1,5.7,5.6,5.3,5.2,6.5,5.1,3.7,3.7],CAN:[6.8,7.2,7.7,7.6,7.2,6.8,6.3,6.0,6.1,8.3,8.1,7.5,7.3,7.1,6.9,6.9,7.0,6.4,6.0,5.7,9.5,7.4,5.3,5.4]},
+  spend: {USA:[4.7,2.5,2.7,2.8,3.3,3.0,2.9,2.4,2.4,-1.6,1.8,2.5,1.8,1.7,1.8,3.2,2.7,2.6,2.4,2.4,-0.3,8.3,2.0,2.1],IND:[4.2,5.5,5.2,7.8,6.5,8.5,8.8,7.2,7.9,7.5,8.7,8.9,5.6,6.5,5.7,7.4,8.1,7.7,7.3,5.5,-9.1,6.9,7.9,6.8],DEU:[2.0,1.7,-0.5,0.3,-0.2,0.2,1.5,0.1,0.8,-0.1,0.4,1.7,0.9,0.8,1.2,1.8,1.8,1.8,1.4,1.7,-5.8,0.4,-0.4,-1.3],CHN:[7.6,6.3,6.5,5.8,7.3,8.2,8.7,10.3,10.0,9.5,9.0,10.1,9.8,8.5,7.2,6.9,6.8,7.2,7.9,7.6,-0.3,4.2,-0.2,5.5],BRA:[3.4,0.7,1.6,-0.2,3.7,4.5,5.2,6.1,5.7,4.4,6.9,4.8,3.1,2.6,-0.8,-3.8,-4.3,1.0,1.9,1.5,-4.1,2.8,4.2,1.8],GBR:[4.7,3.2,3.5,2.7,3.7,2.3,1.7,2.3,0.8,-1.5,0.7,0.0,1.5,2.4,2.7,3.3,3.0,1.9,1.6,1.2,-11.8,6.2,5.1,-0.8],JPN:[0.5,1.6,-1.0,0.3,1.6,1.6,1.2,0.4,0.1,-1.1,2.8,-0.6,2.2,-1.2,0.0,-1.3,0.7,1.1,0.3,-2.3,-5.9,0.9,2.4,0.9],ZAF:[3.5,3.0,3.8,3.2,4.1,5.8,5.4,4.9,2.5,-0.3,5.0,5.2,3.5,2.7,2.1,1.0,0.7,2.3,1.9,1.5,-5.4,3.8,2.5,1.8],AUS:[3.8,3.6,3.9,3.1,4.5,3.8,3.3,4.4,2.3,0.8,2.5,3.6,2.3,2.4,2.7,3.1,2.8,2.8,2.8,1.9,-5.5,5.3,6.6,1.5],CAN:[4.3,3.7,3.8,3.4,3.3,3.5,4.3,4.2,2.6,-0.6,3.4,2.7,1.9,2.7,2.8,2.2,2.2,3.5,2.6,1.6,-6.2,5.1,5.4,2.1]},
+  int:   {USA:[6.5,3.5,1.75,1.0,2.25,4.25,5.25,4.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.5,1.5,2.5,2.5,1.75,0.25,0.25,4.5,5.5],IND:[8.5,6.5,5.5,5.5,6.0,6.25,7.5,7.75,7.5,5.0,5.5,6.75,8.0,7.75,7.75,7.25,6.5,6.0,6.5,5.15,4.0,4.0,6.5,6.5],DEU:[4.75,3.75,2.75,2.0,2.0,2.25,3.5,4.0,2.5,1.0,1.0,1.25,0.75,0.25,0.15,0.05,0.0,0.0,0.0,0.0,0.0,0.0,2.5,4.0],CHN:[5.85,5.85,5.31,5.31,5.31,5.58,6.12,7.47,5.31,5.31,5.56,6.56,6.0,6.0,5.6,4.85,4.35,4.35,4.35,4.35,3.85,3.8,3.65,3.45],BRA:[15.75,19.0,25.0,16.5,17.75,18.0,13.25,11.25,13.75,8.75,10.75,11.0,7.25,10.0,11.75,14.25,13.75,7.0,6.5,4.5,2.0,9.25,13.75,11.75],GBR:[6.0,5.0,4.0,3.75,4.75,4.5,5.25,5.5,2.0,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25,0.75,0.75,0.1,0.25,3.5,5.25],JPN:[0.5,0.35,0.1,0.1,0.1,0.1,0.4,0.5,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1],ZAF:[12.0,9.5,13.5,12.0,8.0,7.5,9.0,10.5,12.0,7.5,6.0,5.5,5.0,5.0,5.75,6.25,7.0,6.75,6.5,6.5,3.75,3.75,7.0,8.25],AUS:[6.25,4.25,4.25,4.75,5.25,5.5,6.25,6.75,4.25,3.0,4.5,4.75,3.5,2.75,2.5,2.0,1.5,1.5,1.5,0.75,0.25,0.1,3.1,4.35],CAN:[5.75,2.5,2.25,2.75,2.5,3.25,4.25,4.5,1.5,0.25,1.0,1.0,1.0,1.0,1.0,0.5,0.5,1.0,1.75,1.75,0.25,0.25,4.25,5.0]},
+  debt:  {USA:[55,56,57,60,61,63,65,64,69,84,91,98,102,104,104,104,106,105,107,108,129,124,121,122],IND:[74,74,76,79,80,80,74,74,72,72,66,68,66,64,65,68,67,69,69,72,88,83,81,80],DEU:[59,59,60,64,65,68,68,65,66,73,82,80,81,78,75,71,68,64,62,60,69,69,67,64],CHN:[22,23,24,25,25,26,28,31,28,34,36,41,46,46,40,42,44,47,51,52,44,47,51,50],BRA:[64,63,63,71,71,72,67,68,63,64,63,63,62,60,58,65,69,74,78,88,97,91,87,87],GBR:[36,35,34,36,38,41,43,44,52,65,76,81,84,86,88,88,88,87,86,85,99,96,95,100],JPN:[136,150,157,158,169,182,184,182,188,210,213,229,229,238,236,232,236,234,237,236,258,256,261,261],ZAF:[43,41,37,37,36,37,35,28,29,31,36,39,41,47,47,49,52,56,57,62,78,80,72,72],AUS:[18,17,14,13,14,16,16,14,14,20,26,31,35,37,38,41,42,40,41,46,51,52,50,50],CAN:[81,82,78,72,71,70,70,67,71,81,85,85,86,87,88,91,91,89,89,88,118,113,106,107]},
+};
+const YEARS = Array.from({length:24},(_,i)=>2000+i);
+const CODES  = ['USA','IND','DEU','CHN','BRA','GBR','JPN','ZAF','AUS','CAN'];
+const COLORS = ['#00d2ff','#00e5a0','#ffb700','#ff4b6e','#a78bfa','#38bdf8','#f97316','#e879f9','#34d399','#fbbf24'];
+
+const state = {
+  backendOnline: false,
+  allData: [],     // flat rows
+  ticker: {},      // { CODE: { gdp_growth, inflation_rate, ... } }
+  trendSelected: ['USA','IND','DEU','CHN'],
+  compareSelected: ['USA','IND','DEU','CHN'],
+  sortField: 'year', sortDir: -1,
+  wsRetries: 0,
+};
+
+// Chart instances (keyed by id)
+const charts = {};
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  buildMockData();
+  setupChipGroups();
+  populateYearSelects();
+  renderDashboard();
+  renderTrendCharts();
+  renderCompare();
+  renderDataTable();
+  initMap();
+  connectWS();
+}
+
+function buildMockData() {
+  state.allData = [];
+  CODES.forEach(code => {
+    YEARS.forEach((yr, i) => {
+      state.allData.push({
+        country_code: code,
+        country_name: MOCK.countries.find(c=>c.code===code)?.name || code,
+        flag_emoji:   MOCK.countries.find(c=>c.code===code)?.flag_emoji || '',
+        year:          yr,
+        gdp_growth:        MOCK.gdp[code][i],
+        inflation_rate:    MOCK.inf[code][i],
+        consumer_spending: MOCK.spend[code][i],
+        unemployment_rate: MOCK.unemp[code][i],
+        interest_rate:     MOCK.int[code][i],
+        debt_to_gdp:       MOCK.debt[code][i],
+      });
+    });
+    // seed ticker
+    const last = YEARS.length-1;
+    state.ticker[code] = {
+      gdp_growth:    MOCK.gdp[code][last],
+      inflation_rate: MOCK.inf[code][last],
+      unemployment:  MOCK.unemp[code][last],
+      interest_rate: MOCK.int[code][last],
+      sentiment:     (Math.random()*2-1).toFixed(2)*1,
+    };
+  });
+  // Try real backend
+  fetchBackend();
+}
+
+async function fetchBackend() {
+  try {
+    const r = await fetch(API+'/indicators?yearFrom=2000&yearTo=2023', {signal: AbortSignal.timeout(3000)});
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    if (data.length > 0) {
+      state.allData = data;
+      state.backendOnline = true;
+      showToast('Connected to PostgreSQL backend', 'success');
+      renderDashboard();
+      renderTrendCharts();
+      renderDataTable();
+    }
+  } catch { /* stay in mock mode */ }
+}
+
+// ═══════════════════════════════════════════════
+// WEBSOCKET
+// ═══════════════════════════════════════════════
+let ws;
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      document.getElementById('wsStatus').textContent = '⬤ Live';
+      document.getElementById('wsStatus').className = 'ws-status connected';
+      state.wsRetries = 0;
+    };
+    ws.onmessage = e => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'TICKER_INIT' || msg.type === 'TICKER_UPDATE') {
+        msg.data.forEach(row => { state.ticker[row.country_code] = row; });
+        updateTicker();
+        updateKPIs();
+        updateSentimentChart();
+        document.getElementById('lastUpdate').textContent =
+          new Date(msg.ts).toLocaleTimeString();
+      }
+    };
+    ws.onclose = () => {
+      document.getElementById('wsStatus').textContent = '⬤ Offline';
+      document.getElementById('wsStatus').className = 'ws-status error';
+      if (state.wsRetries < 5) {
+        state.wsRetries++;
+        setTimeout(connectWS, 4000);
+      }
+    };
+    ws.onerror = () => {};
+  } catch {}
+
+  // If no backend, simulate with mock ticks
+  if (!state.backendOnline) {
+    document.getElementById('wsStatus').textContent = '⬤ Simulated';
+    document.getElementById('wsStatus').className = 'ws-status';
+    setInterval(mockTick, 3000);
+  }
+}
+
+function mockTick() {
+  CODES.forEach(code => {
+    const t = state.ticker[code];
+    t.gdp_growth    = +(t.gdp_growth    + (Math.random()-.5)*.15).toFixed(2);
+    t.inflation_rate= +(t.inflation_rate+ (Math.random()-.5)*.08).toFixed(2);
+    t.unemployment  = +(t.unemployment  + (Math.random()-.5)*.05).toFixed(2);
+    t.sentiment     = +Math.max(-1,Math.min(1,t.sentiment+(Math.random()-.5)*.12)).toFixed(3);
+  });
+  updateTicker();
+  updateKPIs();
+  updateSentimentChart();
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+}
+
+// ═══════════════════════════════════════════════
+// TICKER BAR
+// ═══════════════════════════════════════════════
+function updateTicker() {
+  CODES.forEach(code => {
+    const t = state.ticker[code];
+    const el = document.getElementById(`tk-${code}-gdp`);
+    if (!el) return;
+    const prev = parseFloat(el.dataset.prev||0);
+    const val = t.gdp_growth;
+    el.dataset.prev = val;
+    const cls = val > prev ? 't-up' : val < prev ? 't-down' : '';
+    el.innerHTML = `<span class="${cls}">${val>=0?'+':''}${val.toFixed(2)}% GDP</span>`;
+  });
+}
+
+// ═══════════════════════════════════════════════
+// KPI CARDS
+// ═══════════════════════════════════════════════
+function updateKPIs() {
+  const avg = key => {
+    const vals = CODES.map(c=>state.ticker[c]?.[key]).filter(v=>v!=null);
+    return vals.reduce((a,b)=>a+b,0)/vals.length;
+  };
+  const setKPI = (id, val, dir='pos') => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = parseFloat(el.dataset.prev||0);
+    el.dataset.prev = val;
+    if (Math.abs(val-prev)>0.001) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    const cls = dir==='pos' ? (val>=0?'val-pos':'val-neg') : dir==='neg' ? (val<=0?'val-pos':'val-neg') : 'val-neu';
+    el.className = `kpi-value ${cls}`;
+    el.textContent = (val>=0&&dir==='pos'?'+':'')+val.toFixed(2)+'%';
+  };
+  setKPI('kpi-gdp',   avg('gdp_growth'),    'pos');
+  setKPI('kpi-inf',   avg('inflation_rate'), 'neg');
+  setKPI('kpi-unemp', avg('unemployment'),   'neg');
+  setKPI('kpi-int',   avg('interest_rate'),  'neu');
+  // spending from historical last year
+  const lastSpend = CODES.map(c=>MOCK.spend[c].at(-1)).reduce((a,b)=>a+b,0)/CODES.length;
+  document.getElementById('kpi-spend').textContent = (lastSpend>=0?'+':'')+lastSpend.toFixed(2)+'%';
+}
+
+// ═══════════════════════════════════════════════
+// CHART HELPERS
+// ═══════════════════════════════════════════════
+function mkChart(id, type, data, options={}) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, { type, data, options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color:'#8ba3c4', font:{family:'JetBrains Mono',size:11}, boxWidth:12 } } },
+    scales: type==='radar' ? {
+      r: { grid:{color:'rgba(255,255,255,0.06)'}, pointLabels:{color:'#8ba3c4',font:{size:10}}, ticks:{color:'#4d6b8a',backdropColor:'transparent'} }
+    } : type==='pie'||type==='doughnut'||type==='polarArea' ? {} : {
+      x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10}} },
+      y: { grid:{color:'rgba(255,255,255,0.06)'}, ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10}} },
+    },
+    ...options
+  }});
+  return charts[id];
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD CHARTS
+// ═══════════════════════════════════════════════
+function renderDashboard() {
+  renderTimeSeriesChart();
+  renderInflationBar();
+  renderScatter();
+  renderDebtChart();
+  renderSentimentChart();
+  updateKPIs();
+  buildSparklines();
+}
+
+function renderTimeSeriesChart() {
+  const field = document.getElementById('tsIndicator')?.value || 'gdp_growth';
+  const dataMap = {
+    gdp_growth:'gdp', inflation_rate:'inf', consumer_spending:'spend',
+    unemployment_rate:'unemp', interest_rate:'int'
+  };
+  const key = dataMap[field] || 'gdp';
+  const selected = ['USA','IND','DEU','CHN','GBR'];
+  const datasets = selected.map((code,i)=>({
+    label: MOCK.countries.find(c=>c.code===code)?.name||code,
+    data: MOCK[key][code],
+    borderColor: COLORS[i],
+    backgroundColor: COLORS[i]+'18',
+    borderWidth: 2,
+    pointRadius: 2,
+    pointHoverRadius: 5,
+    tension: 0.35,
+    fill: false,
+  }));
+  mkChart('tsChart','line',{labels:YEARS,datasets},{
+    plugins:{
+      legend:{position:'bottom'},
+      tooltip:{mode:'index',intersect:false}
+    },
+    interaction:{mode:'nearest',axis:'x',intersect:false},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10},maxTicksLimit:10}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10},callback:v=>v+'%'}},
+    }
+  });
+}
+
+function renderInflationBar() {
+  const vals = CODES.map(c=>state.ticker[c]?.inflation_rate??MOCK.inf[c].at(-1));
+  const colors = vals.map(v=>v>8?'#ff4b6e':v>4?'#ffb700':'#00d2ff');
+  mkChart('infBarChart','bar',{
+    labels: CODES.map(c=>MOCK.countries.find(x=>x.code===c)?.flag_emoji+' '+c),
+    datasets:[{data:vals,backgroundColor:colors,borderRadius:4,borderSkipped:false}]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#8ba3c4',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+    }
+  });
+}
+
+function renderScatter() {
+  const datasets = CODES.map((code,i)=>({
+    label: code,
+    data: YEARS.slice(16).map((_,j)=>({
+      x: MOCK.gdp[code][16+j],
+      y: MOCK.unemp[code][16+j]
+    })),
+    backgroundColor: COLORS[i]+'aa',
+    borderColor: COLORS[i],
+    pointRadius: 5,
+  }));
+  mkChart('scatterChart','scatter',{datasets},{
+    plugins:{tooltip:{callbacks:{label:d=>`${d.dataset.label}: GDP ${d.parsed.x.toFixed(1)}% | Unemp ${d.parsed.y.toFixed(1)}%`}}},
+    scales:{
+      x:{title:{display:true,text:'GDP Growth (%)',color:'#8ba3c4'},grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+      y:{title:{display:true,text:'Unemployment (%)',color:'#8ba3c4'},grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+    }
+  });
+}
+
+function renderDebtChart() {
+  const latest = CODES.map(c=>({code:c, val:MOCK.debt[c].at(-1), flag:MOCK.countries.find(x=>x.code===c)?.flag_emoji}));
+  latest.sort((a,b)=>b.val-a.val);
+  const colors = latest.map(d=>d.val>100?'#ff4b6e':d.val>60?'#ffb700':'#00e5a0');
+  mkChart('debtChart','bar',{
+    labels: latest.map(d=>d.flag+' '+d.code),
+    datasets:[{data:latest.map(d=>d.val),backgroundColor:colors,borderRadius:4,borderSkipped:false}]
+  },{
+    indexAxis:'y',
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+      y:{grid:{display:false},ticks:{color:'#8ba3c4',font:{size:10}}},
+    }
+  });
+}
+
+function renderSentimentChart() {
+  const labels = CODES.map(c=>MOCK.countries.find(x=>x.code===c)?.flag_emoji||c);
+  const vals   = CODES.map(c=>state.ticker[c]?.sentiment??0);
+  const colors = vals.map(v=>v>0.3?'#00e5a0':v<-0.3?'#ff4b6e':'#ffb700');
+  mkChart('sentimentChart','bar',{labels,datasets:[{
+    data:vals, backgroundColor:colors,
+    borderRadius:6, borderSkipped:false
+  }]},{
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`Sentiment: ${d.parsed.y.toFixed(3)}`}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#8ba3c4',font:{size:14}}},
+      y:{min:-1,max:1,grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4'},
+         title:{display:true,text:'Index (-1 to +1)',color:'#4d6b8a'}},
+    }
+  });
+}
+
+function updateSentimentChart() {
+  if (!charts['sentimentChart']) return;
+  const vals = CODES.map(c=>state.ticker[c]?.sentiment??0);
+  const colors = vals.map(v=>v>0.3?'#00e5a0':v<-0.3?'#ff4b6e':'#ffb700');
+  charts['sentimentChart'].data.datasets[0].data = vals;
+  charts['sentimentChart'].data.datasets[0].backgroundColor = colors;
+  charts['sentimentChart'].update('none');
+
+  // Also update inflation live
+  if (charts['infBarChart']) {
+    const vals2 = CODES.map(c=>state.ticker[c]?.inflation_rate??MOCK.inf[c].at(-1));
+    charts['infBarChart'].data.datasets[0].data = vals2;
+    charts['infBarChart'].data.datasets[0].backgroundColor = vals2.map(v=>v>8?'#ff4b6e':v>4?'#ffb700':'#00d2ff');
+    charts['infBarChart'].update('none');
+  }
+}
+
+function buildSparklines() {
+  const sparkDefs = [
+    {id:'spark-gdp',   data:YEARS.slice(18).map((_,i)=>MOCK.gdp.USA[18+i]),   color:'#00d2ff'},
+    {id:'spark-inf',   data:YEARS.slice(18).map((_,i)=>MOCK.inf.USA[18+i]),   color:'#ff4b6e'},
+    {id:'spark-unemp', data:YEARS.slice(18).map((_,i)=>MOCK.unemp.USA[18+i]),color:'#ffb700'},
+    {id:'spark-spend', data:YEARS.slice(18).map((_,i)=>MOCK.spend.USA[18+i]),color:'#00e5a0'},
+    {id:'spark-int',   data:YEARS.slice(18).map((_,i)=>MOCK.int.USA[18+i]),  color:'#a78bfa'},
+  ];
+  sparkDefs.forEach(({id,data,color})=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    mkChart(id,'line',{
+      labels: data.map((_,i)=>i),
+      datasets:[{data,borderColor:color,borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:color+'22',tension:0.4}]
+    },{
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{x:{display:false},y:{display:false}},
+      animation:false
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// TREND CHARTS
+// ═══════════════════════════════════════════════
+function setupChipGroups() {
+  const countryMeta = MOCK.countries;
+  // Trend chips
+  const tg = document.getElementById('trendCountryChips');
+  if(tg) countryMeta.forEach(c=>{
+    const ch = document.createElement('button');
+    ch.className = 'chip'+(state.trendSelected.includes(c.code)?' active':'');
+    ch.textContent = c.flag_emoji+' '+c.code;
+    ch.onclick = () => {
+      if(state.trendSelected.includes(c.code)) { if(state.trendSelected.length>1) state.trendSelected = state.trendSelected.filter(x=>x!==c.code); }
+      else if(state.trendSelected.length<6) state.trendSelected.push(c.code);
+      ch.classList.toggle('active', state.trendSelected.includes(c.code));
+      renderTrendCharts();
+    };
+    tg.appendChild(ch);
+  });
+  // Compare chips
+  const cg = document.getElementById('compareChips');
+  if(cg) countryMeta.forEach(c=>{
+    const ch = document.createElement('button');
+    ch.className = 'chip'+(state.compareSelected.includes(c.code)?' active':'');
+    ch.textContent = c.flag_emoji+' '+c.code;
+    ch.onclick = () => {
+      if(state.compareSelected.includes(c.code)) { if(state.compareSelected.length>1) state.compareSelected = state.compareSelected.filter(x=>x!==c.code); }
+      else if(state.compareSelected.length<4) state.compareSelected.push(c.code);
+      ch.classList.toggle('active', state.compareSelected.includes(c.code));
+      renderCompare();
+    };
+    cg.appendChild(ch);
+  });
+  // Forecast country
+  const fc = document.getElementById('forecastCountry');
+  if(fc) MOCK.countries.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.code; opt.textContent = c.flag_emoji+' '+c.name;
+    fc.appendChild(opt);
+  });
+}
+
+function populateYearSelects() {
+  const sel = document.getElementById('compareYear');
+  if(sel) YEARS.slice().reverse().forEach(yr=>{
+    const o = document.createElement('option');
+    o.value=yr; o.textContent=yr;
+    sel.appendChild(o);
+  });
+  const tsel = document.getElementById('tableYear');
+  if(tsel) YEARS.slice().reverse().forEach(yr=>{
+    const o = document.createElement('option');
+    o.value=yr; o.textContent=yr;
+    tsel.appendChild(o);
+  });
+}
+
+function getFieldData(field) {
+  const m = {gdp_growth:'gdp',inflation_rate:'inf',consumer_spending:'spend',unemployment_rate:'unemp',interest_rate:'int'};
+  return m[field]||'gdp';
+}
+
+function renderTrendCharts() {
+  const field = document.getElementById('trendIndicator')?.value||'gdp_growth';
+  const key   = getFieldData(field);
+  const yf    = parseInt(document.getElementById('yearFrom')?.value)||2000;
+  const yt    = parseInt(document.getElementById('yearTo')?.value)||2023;
+  const labels= YEARS.filter(y=>y>=yf&&y<=yt);
+  const idxFrom = YEARS.indexOf(yf), idxTo = YEARS.indexOf(yt);
+
+  document.getElementById('trendMainTitle').textContent = field.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())+' Trend';
+  document.getElementById('trendMainSub').textContent   = `${state.trendSelected.join(', ')} · ${yf}–${yt}`;
+
+  const datasets = state.trendSelected.map((code,i)=>({
+    label: MOCK.countries.find(c=>c.code===code)?.name||code,
+    data:  MOCK[key][code].slice(idxFrom, idxTo+1),
+    borderColor: COLORS[i], backgroundColor: COLORS[i]+'18',
+    borderWidth:2, pointRadius:2, pointHoverRadius:5, tension:0.35,fill:false
+  }));
+  mkChart('trendMainChart','line',{labels,datasets},{
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12}},tooltip:{mode:'index',intersect:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10},maxTicksLimit:8}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',font:{family:'JetBrains Mono',size:10},callback:v=>v+'%'}},
+    }
+  });
+
+  // YoY chart
+  const yoyDatasets = state.trendSelected.map((code,i)=>{
+    const raw = MOCK[key][code].slice(idxFrom, idxTo+1);
+    return {
+      label: code,
+      data: raw.map((v,j)=>j===0?0:+(v-raw[j-1]).toFixed(2)),
+      borderColor: COLORS[i], backgroundColor: COLORS[i]+'22',
+      borderWidth:1.5, pointRadius:2, tension:0.4, fill:true
+    };
+  });
+  mkChart('yoyChart','line',{labels,datasets:yoyDatasets},{
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12}},tooltip:{mode:'index',intersect:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',font:{size:10},maxTicksLimit:8}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',font:{size:10},callback:v=>(v>=0?'+':'')+v+'pp'}},
+    }
+  });
+
+  renderCorrHeatmap(field, yf, yt);
+  renderDecadeHeatmap();
+}
+
+function onYearChange() {
+  let yf = parseInt(document.getElementById('yearFrom').value);
+  let yt = parseInt(document.getElementById('yearTo').value);
+  if(yf>=yt) { if(document.activeElement===document.getElementById('yearFrom')) yt=Math.min(2023,yf+1); else yf=Math.max(2000,yt-1); }
+  document.getElementById('yearFrom').value = yf;
+  document.getElementById('yearTo').value   = yt;
+  document.getElementById('yearFromVal').textContent = yf;
+  document.getElementById('yearToVal').textContent   = yt;
+  renderTrendCharts();
+}
+
+// ═══════════════════════════════════════════════
+// CORRELATION HEATMAP
+// ═══════════════════════════════════════════════
+function renderCorrHeatmap(field, yf, yt) {
+  const fields = ['gdp_growth','inflation_rate','consumer_spending','unemployment_rate','interest_rate'];
+  const shorts  = ['GDP','Infl','Spend','Unemp','Int'];
+  const dataMap = {gdp_growth:'gdp',inflation_rate:'inf',consumer_spending:'spend',unemployment_rate:'unemp',interest_rate:'int'};
+
+  // Build all observations across selected countries & year range
+  const idxFrom=YEARS.indexOf(yf), idxTo=YEARS.indexOf(yt);
+  const vectors = {};
+  fields.forEach(f=>{
+    vectors[f]=[];
+    state.trendSelected.forEach(code=>{
+      MOCK[dataMap[f]][code].slice(idxFrom,idxTo+1).forEach(v=>vectors[f].push(v));
+    });
+  });
+
+  function corr(xs,ys){
+    const n=xs.length; if(!n) return 0;
+    const mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+    let num=0,dx=0,dy=0;
+    for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);dx+=(xs[i]-mx)**2;dy+=(ys[i]-my)**2;}
+    const d=Math.sqrt(dx*dy); return d?+(num/d).toFixed(3):0;
+  }
+
+  const grid = document.getElementById('corrGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  // Header row
+  grid.appendChild(Object.assign(document.createElement('div'),{className:'corr-label'}));
+  shorts.forEach(s=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-2);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:4px';
+    d.textContent=s; grid.appendChild(d);
+  });
+  // Data rows
+  fields.forEach((fx,i)=>{
+    const label=document.createElement('div');
+    label.className='corr-label'; label.textContent=shorts[i]; grid.appendChild(label);
+    fields.forEach((fy)=>{
+      const r=corr(vectors[fx],vectors[fy]);
+      const a=Math.abs(r);
+      const cell=document.createElement('div');
+      cell.className='corr-cell';
+      const bg = r>0.7?`rgba(0,229,160,${0.15+a*0.5})`:r<-0.7?`rgba(255,75,110,${0.15+a*0.5})`:`rgba(255,255,255,${a*0.08})`;
+      const col = r>0.5?'#00e5a0':r<-0.5?'#ff4b6e':r===1?'#fff':'#8ba3c4';
+      cell.style.cssText=`background:${bg};color:${col};`;
+      cell.textContent=r.toFixed(2);
+      cell.title=`${shorts[i]} vs ${shorts[fields.indexOf(fy)]}: r=${r}`;
+      grid.appendChild(cell);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// DECADE HEATMAP
+// ═══════════════════════════════════════════════
+function renderDecadeHeatmap() {
+  const decades=[{label:'2000s',from:0,to:9},{label:'2010s',from:10,to:19},{label:'2020s',from:20,to:23}];
+  const table = document.getElementById('decadeHeatmap');
+  if(!table) return;
+  table.innerHTML = `<tr><th style="text-align:left">Country</th>${decades.map(d=>`<th>${d.label}</th>`).join('')}</tr>`;
+  CODES.forEach(code=>{
+    const row = document.createElement('tr');
+    const c = MOCK.countries.find(x=>x.code===code);
+    row.innerHTML = `<td style="text-align:left;color:var(--text-0);font-weight:600;padding:8px 12px">${c.flag_emoji} ${c.name}</td>`;
+    decades.forEach(d=>{
+      const vals = MOCK.gdp[code].slice(d.from,d.to+1);
+      const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+      const v = parseFloat(avg);
+      const bg = v>5?'rgba(0,229,160,0.25)':v>2?'rgba(0,210,255,0.15)':v>0?'rgba(255,183,0,0.15)':'rgba(255,75,110,0.2)';
+      const col= v>5?'#00e5a0':v>2?'#00d2ff':v>0?'#ffb700':'#ff4b6e';
+      row.innerHTML += `<td><div class="hm-cell" style="background:${bg};color:${col};padding:8px 12px;">${avg}%</div></td>`;
+    });
+    table.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// COMPARE
+// ═══════════════════════════════════════════════
+function renderCompare() {
+  const yr = parseInt(document.getElementById('compareYear')?.value||2023);
+  document.getElementById('compareBarSub').textContent = `Selected countries · ${yr}`;
+  const fields = ['gdp_growth','inflation_rate','consumer_spending','unemployment_rate','interest_rate'];
+  const shorts  = ['GDP%','Infl%','Spend%','Unemp%','Int%'];
+  const dataMap = {gdp_growth:'gdp',inflation_rate:'inf',consumer_spending:'spend',unemployment_rate:'unemp',interest_rate:'int'};
+  const yi = YEARS.indexOf(yr);
+
+  // Grouped bar
+  const datasets = fields.map((f,fi)=>({
+    label: shorts[fi],
+    data:  state.compareSelected.map(c=>MOCK[dataMap[f]][c][yi]??0),
+    backgroundColor: COLORS[fi]+'cc',
+    borderRadius:4,
+  }));
+  mkChart('compareBarChart','bar',{
+    labels: state.compareSelected.map(c=>{
+      const m=MOCK.countries.find(x=>x.code===c);
+      return (m?.flag_emoji||'')+' '+c;
+    }),
+    datasets
+  },{
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#8ba3c4',font:{size:11}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+    }
+  });
+
+  // Radar — normalise each indicator to 0–100 across all countries
+  const normalize = (arr) => {
+    const min=Math.min(...arr), max=Math.max(...arr), r=max-min||1;
+    return arr.map(v=>Math.round((v-min)/r*100));
+  };
+  const radarLabels = ['GDP Growth','Inflation','Spending','Unemployment','Interest Rate'];
+  const radarDatasets = state.compareSelected.map((code,i)=>{
+    const allVals = fields.map((f,fi)=>MOCK[dataMap[fields[fi]]][code][yi]??0);
+    return {
+      label: (MOCK.countries.find(c=>c.code===code)?.flag_emoji||'')+' '+code,
+      data: allVals.map((v,fi)=>normalize(state.compareSelected.map(c=>MOCK[dataMap[fields[fi]]][c][yi]??0))[state.compareSelected.indexOf(code)]),
+      borderColor: COLORS[i], backgroundColor: COLORS[i]+'22',
+      pointBackgroundColor: COLORS[i], borderWidth:2,
+    };
+  });
+  mkChart('radarChart','radar',{labels:radarLabels,datasets:radarDatasets},{
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:'#8ba3c4'}}}
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FORECAST
+// ═══════════════════════════════════════════════
+function linearForecast(data, steps=3) {
+  const n=data.length, xs=Array.from({length:n},(_,i)=>i);
+  const mx=(n-1)/2, my=data.reduce((a,b)=>a+b)/n;
+  let num=0,den=0;
+  for(let i=0;i<n;i++){num+=(xs[i]-mx)*(data[i]-my);den+=(xs[i]-mx)**2;}
+  const m=den?num/den:0, b=my-m*mx;
+  return Array.from({length:steps},(_,i)=>+(b+m*(n+i)).toFixed(2));
+}
+
+function renderForecast() {
+  const code = document.getElementById('forecastCountry')?.value||'USA';
+  const gdp  = MOCK.gdp[code],   inf  = MOCK.inf[code];
+  const fGdp = linearForecast(gdp), fInf = linearForecast(inf);
+  const fYears = [2024,2025,2026];
+
+  // Forecast cards
+  const container = document.getElementById('forecastCards');
+  if(container) container.innerHTML = fYears.map((yr,i)=>`
+    <div class="forecast-card">
+      <div class="fc-year">${yr} — Projected</div>
+      <div class="fc-val" style="color:${fGdp[i]>=0?'var(--green)':'var(--red)'}">${fGdp[i]>=0?'+':''}${fGdp[i]}%</div>
+      <div class="fc-label">GDP Growth Forecast</div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div class="fc-year">Inflation</div>
+        <div class="fc-val" style="color:${fInf[i]<4?'var(--green)':fInf[i]<8?'var(--amber)':'var(--red)'}">${fInf[i]}%</div>
+      </div>
+    </div>
+  `).join('');
+
+  // GDP chart with forecast
+  const allLabels = [...YEARS.slice(-10).map(String), ...fYears.map(y=>y+'*')];
+  const histGDP   = gdp.slice(-10);
+  mkChart('fcGdpChart','line',{
+    labels: allLabels,
+    datasets:[
+      {label:'Historical', data:[...histGDP,...Array(3).fill(null)], borderColor:'#00d2ff', borderWidth:2, pointRadius:3, tension:0.35},
+      {label:'Forecast',   data:[...Array(9).fill(null), histGDP.at(-1), ...fGdp], borderColor:'#a78bfa', borderWidth:2, pointRadius:4, borderDash:[6,4], tension:0.35},
+    ]
+  },{
+    plugins:{legend:{position:'bottom'},tooltip:{mode:'index',intersect:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+    }
+  });
+
+  // Inflation chart
+  const histInf = inf.slice(-10);
+  mkChart('fcInfChart','line',{
+    labels: allLabels,
+    datasets:[
+      {label:'Historical', data:[...histInf,...Array(3).fill(null)], borderColor:'#ff4b6e', borderWidth:2, pointRadius:3, tension:0.35},
+      {label:'Forecast',   data:[...Array(9).fill(null), histInf.at(-1), ...fInf], borderColor:'#ffb700', borderWidth:2, pointRadius:4, borderDash:[6,4], tension:0.35},
+    ]
+  },{
+    plugins:{legend:{position:'bottom'},tooltip:{mode:'index',intersect:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8ba3c4',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#8ba3c4',callback:v=>v+'%'}},
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// DATA TABLE
+// ═══════════════════════════════════════════════
+let tableData=[], tableFiltered=[];
+function renderDataTable() {
+  const yr = document.getElementById('tableYear')?.value||'all';
+  tableData = state.allData.filter(r=>yr==='all'||r.year==yr);
+  sortAndRenderTable();
+}
+function sortAndRenderTable() {
+  const f=state.sortField, d=state.sortDir;
+  tableFiltered = [...tableData].sort((a,b)=>{
+    const av=a[f]??-Infinity, bv=b[f]??-Infinity;
+    return typeof av==='number'?(av-bv)*d:(String(av).localeCompare(String(bv)))*d;
+  });
+  const search = document.getElementById('tableSearch')?.value.toLowerCase()||'';
+  if(search) tableFiltered = tableFiltered.filter(r=>(r.country_name||r.country_code||'').toLowerCase().includes(search));
+  renderTableRows(tableFiltered);
+}
+function renderTableRows(rows) {
+  const tbody = document.getElementById('dataTableBody');
+  if(!tbody) return;
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state" style="padding:40px;text-align:center;color:var(--text-2)">No data found</td></tr>';return;}
+  const maxGDP = Math.max(...rows.map(r=>Math.abs(r.gdp_growth||0)));
+  tbody.innerHTML = rows.slice(0,200).map((r,i)=>{
+    const flag = r.flag_emoji||MOCK.countries.find(c=>c.code===r.country_code)?.flag_emoji||'🏳';
+    const rc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const barW = Math.round(Math.abs(r.gdp_growth||0)/maxGDP*60);
+    const barC = (r.gdp_growth||0)>=0?'var(--green)':'var(--red)';
+    return `<tr>
+      <td><div class="rank-badge ${rc}">${i+1}</div></td>
+      <td><div class="country-cell"><span class="flag-bubble">${flag}</span><div><div style="font-weight:600">${r.country_name||r.country_code}</div><div style="font-size:11px;color:var(--text-2);font-family:var(--font-mono)">${r.country_code}</div></div></div></td>
+      <td>${r.year}</td>
+      <td><div class="bar-cell"><div class="mini-bar" style="width:${barW}px;background:${barC}"></div><span style="color:${barC}">${fmt(r.gdp_growth)}</span></div></td>
+      <td style="color:${(r.inflation_rate||0)>8?'var(--red)':(r.inflation_rate||0)>4?'var(--amber)':'var(--text-1)'}">${fmt(r.inflation_rate)}</td>
+      <td style="color:${(r.consumer_spending||0)>=0?'var(--green)':'var(--red)'}">${fmt(r.consumer_spending)}</td>
+      <td>${fmt(r.unemployment_rate)}</td>
+      <td>${fmt(r.interest_rate)}</td>
+      <td>${fmt(r.debt_to_gdp)}</td>
+    </tr>`;
+  }).join('');
+}
+function fmt(v){if(v==null)return'–';const n=parseFloat(v);return isNaN(n)?'–':(n>=0?'+':'')+n.toFixed(2)+'%';}
+function sortTable(f){if(state.sortField===f)state.sortDir*=-1;else{state.sortField=f;state.sortDir=-1;}sortAndRenderTable();}
+function filterTable(){sortAndRenderTable();}
+function exportCSV(){
+  const header='Country,Code,Year,GDP Growth,Inflation,Consumer Spending,Unemployment,Interest Rate,Debt/GDP';
+  const rows=tableFiltered.map(r=>[r.country_name,r.country_code,r.year,r.gdp_growth,r.inflation_rate,r.consumer_spending,r.unemployment_rate,r.interest_rate,r.debt_to_gdp].join(','));
+  const blob=new Blob([[header,...rows].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='econtrack_data.csv';a.click();
+  showToast('CSV exported successfully!','success');
+}
+
+// ═══════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════
+let map, mapMarkers=[];
+function initMap() {
+  if(!document.getElementById('world-map')) return;
+  map = L.map('world-map', {zoomControl:true, attributionControl:false}).setView([20,0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+  updateMapMarkers();
+}
+
+function updateMapMarkers() {
+  if(!map) return;
+  mapMarkers.forEach(m=>map.removeLayer(m)); mapMarkers=[];
+  const field = document.getElementById('mapIndicator')?.value||'gdp_growth';
+  const dataMap={gdp_growth:'gdp',inflation_rate:'inf',unemployment:'unemp',interest_rate:'int'};
+  const key = dataMap[field]||'gdp';
+
+  MOCK.countries.forEach(c=>{
+    const val = key==='sentiment'
+      ? (state.ticker[c.code]?.sentiment??0)
+      : (MOCK[key]?.[c.code]?.at(-1)??0);
+    const color = field==='gdp_growth'||field==='sentiment'
+      ? (val>4?'#00e5a0':val>2?'#00d2ff':val>0?'#ffb700':'#ff4b6e')
+      : (val>8?'#ff4b6e':val>4?'#ffb700':'#00d2ff');
+
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="
+        background:var(--surface-2,#182338);
+        border:2px solid ${color};
+        border-radius:8px;
+        padding:5px 9px;
+        font-family:JetBrains Mono,monospace;
+        font-size:11px;
+        font-weight:600;
+        color:${color};
+        white-space:nowrap;
+        box-shadow:0 0 16px ${color}55;
+        backdrop-filter:blur(4px);
+      ">${c.flag_emoji} ${c.code} <span style="color:#f0f6ff;font-weight:400">${val>=0&&field!=='unemployment'&&field!=='inflation_rate'&&field!=='interest_rate'?'+':''}${val.toFixed(1)}%</span></div>`,
+      iconSize:[110,30], iconAnchor:[55,15]
+    });
+
+    const t = state.ticker[c.code]||{};
+    const popup = `
+      <div class="map-popup">
+        <h3>${c.flag_emoji} ${c.name}</h3>
+        <div class="stat-row"><span class="s-label">GDP Growth</span><span class="s-val" style="color:${(t.gdp_growth??0)>=0?'#00e5a0':'#ff4b6e'}">${fmt(t.gdp_growth??MOCK.gdp[c.code]?.at(-1))}</span></div>
+        <div class="stat-row"><span class="s-label">Inflation</span><span class="s-val">${fmt(t.inflation_rate??MOCK.inf[c.code]?.at(-1))}</span></div>
+        <div class="stat-row"><span class="s-label">Unemployment</span><span class="s-val">${fmt(t.unemployment??MOCK.unemp[c.code]?.at(-1))}</span></div>
+        <div class="stat-row"><span class="s-label">Interest Rate</span><span class="s-val">${fmt(t.interest_rate??MOCK.int[c.code]?.at(-1))}</span></div>
+        <div class="stat-row"><span class="s-label">Debt/GDP</span><span class="s-val">${MOCK.debt[c.code]?.at(-1)??'–'}%</span></div>
+        <div class="stat-row"><span class="s-label">GDP (USD bn)</span><span class="s-val">$${c.gdp_usd_bn?.toLocaleString()}</span></div>
+        <div class="stat-row"><span class="s-label">Region</span><span class="s-val" style="color:#8ba3c4">${c.region}</span></div>
+      </div>`;
+
+    const marker = L.marker([c.lat,c.lng],{icon}).addTo(map).bindPopup(popup,{maxWidth:280});
+    mapMarkers.push(marker);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name)?.classList.add('active');
+  event.currentTarget.classList.add('active');
+  // Lazy init
+  if(name==='map'&&!map) setTimeout(initMap,100);
+  if(name==='trends') renderTrendCharts();
+  if(name==='compare') renderCompare();
+  if(name==='forecast') renderForecast();
+  if(name==='data') renderDataTable();
+}
+
+// ═══════════════════════════════════════════════
+// TOASTS
+// ═══════════════════════════════════════════════
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<strong>${type==='success'?'✓ ':type==='error'?'✗ ':'ℹ '}</strong>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
