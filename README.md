@@ -193,4 +193,4 @@ git push -u origin main
 - **"Forecast modelling"** → Linear regression with 3-year projection
 - **"Full-stack single-page application"** → No framework, pure HTML/CSS/JS frontend + Node backend
 
-*Built by **Zaheer**
+*Built by **Zaheer***
