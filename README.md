@@ -182,7 +182,7 @@ git push -u origin main
 
 ---
 
-## Resume Bullet Points This Project Demonstrates
+## Bullet Points This Project Demonstrates
 
 - **"Real-time WebSocket feed"** → `server.js` broadcasts live ticker every 3s to all connected clients
 - **"PostgreSQL with parameterised queries"** → all SQL in `server.js` uses `$1, $2, ...` params
