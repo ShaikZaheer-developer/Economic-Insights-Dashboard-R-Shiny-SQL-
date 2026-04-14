@@ -192,3 +192,5 @@ git push -u origin main
 - **"Correlation analysis"** → Pearson r matrix computed server-side and client-side
 - **"Forecast modelling"** → Linear regression with 3-year projection
 - **"Full-stack single-page application"** → No framework, pure HTML/CSS/JS frontend + Node backend
+
+*Built by **Zaheer**
